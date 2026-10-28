@@ -1,0 +1,50 @@
+plugins {
+    id "com.android.application"
+}
+
+def runNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+
+android {
+    namespace "com.mateohidalgo.conteo"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.mateohidalgo.conteo"
+        minSdk 26
+        targetSdk 34
+        versionCode runNumber
+        versionName "1." + runNumber
+    }
+
+    // Llave fija para que cada APK nueva se instale como actualización sin borrar tus datos
+    signingConfigs {
+        release {
+            storeFile file("conteo.jks")
+            storePassword "conteo-app"
+            keyAlias "conteo"
+            keyPassword "conteo-app"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+
+dependencies {
+    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation "androidx.webkit:webkit:1.11.0"
+}
