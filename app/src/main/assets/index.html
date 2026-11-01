@@ -155,6 +155,13 @@ tfoot td{font-weight:700;border-bottom:0;font-size:16px}
 .primary{border:0;background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:12px;height:42px;padding:0 16px}
 .sync{font-size:12px;color:var(--muted);text-align:center}
 .formmsg{font-size:13px;color:var(--over);min-height:1em}
+.addcustom{border:1.5px dashed var(--accent);background:none;color:var(--accent);font-weight:700;border-radius:12px;padding:11px 14px;text-align:left;font-size:14px}
+.cform{background:var(--surface);border:1px solid var(--accent);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.cform h4{margin:0;font-family:var(--f-display);font-size:18px;font-weight:700}
+.cform .seg{align-self:flex-start;flex-wrap:wrap}
+.check{display:flex;align-items:center;gap:8px;font-size:14px}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.cform .actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 @media (max-width:420px){
   .tab{padding-inline:2px}
   .tab .n{font-size:11px;letter-spacing:-.01em}
@@ -192,6 +199,24 @@ tfoot td{font-weight:700;border-bottom:0;font-size:16px}
       </div>
     </div>
     <div class="modehint" id="modeHint"></div>
+    <button class="addcustom" data-act="custom-open" id="customOpen">+ Agregar personalizado (vos ponés nombre y calorías)</button>
+    <form class="cform" id="customForm" autocomplete="off" hidden>
+      <h4 id="cfTitle">Personalizado</h4>
+      <div class="form">
+        <label class="full">Nombre<input id="cfName" maxlength="40" placeholder="Ej: Roast beef desmechado"></label>
+        <label>Calorías (kcal)<input id="cfK" inputmode="decimal" placeholder="450"></label>
+        <label>Proteínas (g, opcional)<input id="cfP" inputmode="decimal" placeholder="—"></label>
+      </div>
+      <div class="seg" role="group" aria-label="Las calorías son">
+        <button type="button" data-act="basis" data-basis="total" id="cfBasisTotal">De lo que voy a comer</button>
+        <button type="button" data-act="basis" data-basis="100" id="cfBasis100">Cada 100 g</button>
+      </div>
+      <div class="modehint" id="cfBasisHint"></div>
+      <label class="form" id="cfGWrap" hidden><span style="font-size:12px;color:var(--muted);font-weight:600" class="full">Tipo de alimento</span><select id="cfG" class="full"></select></label>
+      <label class="check"><input type="checkbox" id="cfSave" checked> Guardar en "Mis alimentos" para la próxima</label>
+      <div class="formmsg" id="cfMsg"></div>
+      <div class="actions"><button class="primary" type="submit" id="cfSubmit">Agregar</button><button type="button" class="linkbtn" data-act="custom-close">Cancelar</button></div>
+    </form>
     <div id="shelf"></div>
   </section>
 
@@ -201,16 +226,6 @@ tfoot td{font-weight:700;border-bottom:0;font-size:16px}
     <div class="tablewrap"><table id="planTable"></table></div>
     <div class="glabel">Calorías por ración</div>
     <div class="rgrid" id="rgrid"></div>
-    <div class="glabel" style="margin-top:8px">Agregar un alimento propio</div>
-    <form class="form" id="customForm" autocomplete="off">
-      <label class="full">Nombre<input id="cfName" maxlength="40" placeholder="Ej: Hamburguesa casera"></label>
-      <label>kcal cada 100 g<input id="cfK" inputmode="decimal" placeholder="220"></label>
-      <label>Proteína cada 100 g<input id="cfP" inputmode="decimal" placeholder="20"></label>
-      <label>Grupo<select id="cfG"></select></label>
-      <label>Porción (opcional, g)<input id="cfU" inputmode="decimal" placeholder="120"></label>
-      <div class="full formmsg" id="cfMsg"></div>
-      <button class="primary full" type="submit">Agregar a mis alimentos</button>
-    </form>
   </details>
 
   <div class="sync" id="sync">Guardado en el teléfono</div>
@@ -237,6 +252,7 @@ const FOODS = [
   {id:"mila-pollo", name:"Milanesa de pollo al horno", grp:"proteina", k:210, p:22, u:{n:"milanesa",pl:"milanesas",g:120}},
   {id:"mila-carne", name:"Milanesa de carne al horno", grp:"proteina", k:230, p:21, u:{n:"milanesa",pl:"milanesas",g:120}},
   {id:"bife", name:"Bife magro a la plancha", note:"nalga, cuadril, peceto", grp:"proteina", k:180, p:29},
+  {id:"roast-beef", name:"Roast beef desmechado", note:"al disco", grp:"proteina", k:250, p:27},
   {id:"pechuga", name:"Pechuga de pollo a la plancha", grp:"proteina", k:165, p:31},
   {id:"pescado", name:"Pescado blanco a la plancha", note:"merluza, abadejo", grp:"proteina", k:100, p:21},
   {id:"atun", name:"Atún al natural", note:"escurrido", grp:"proteina", k:115, p:26, u:{n:"lata",pl:"latas",g:120}},
@@ -452,9 +468,9 @@ function renderPanel(){
         '<button class="x" data-act="del" data-item="' + i.id + '" aria-label="Quitar ' + esc(i.name) + '">×</button></span>' +
         '<span class="isub num" id="sub-' + i.id + '">' + subText(i) + '</span>' +
         '<div class="irow"><div class="stepper">' +
-          '<button data-act="dec" data-item="' + i.id + '" aria-label="Restar ' + step + ' g">−</button>' +
-          '<input id="g-' + i.id + '" data-item="' + i.id + '" inputmode="numeric" value="' + Math.round(i.g) + '" aria-label="Gramos de ' + esc(i.name) + '">' +
-          '<button data-act="inc" data-item="' + i.id + '" aria-label="Sumar ' + step + ' g">+</button>' +
+          '<button data-act="dec" data-item="' + i.id + '" aria-label="' + (i.po ? 'Restar 1 porción' : 'Restar ' + step + ' g') + '">−</button>' +
+          '<input id="g-' + i.id + '" data-item="' + i.id + '" inputmode="decimal" value="' + amtOf(i) + '" aria-label="' + (i.po ? 'Porciones de ' : 'Gramos de ') + esc(i.name) + '">' +
+          '<button data-act="inc" data-item="' + i.id + '" aria-label="' + (i.po ? 'Sumar 1 porción' : 'Sumar ' + step + ' g') + '">+</button>' +
         '</div><span class="ikcal num" id="kc-' + i.id + '">' + k0(kc(i)) + ' <small>kcal</small></span></div>' +
       '</div>';
     }
@@ -466,8 +482,12 @@ function renderPanel(){
 }
 function subText(i){
   const ut = unitsText(i);
-  return (i.g ? "" : "") + (ut ? ut + " · " : "") + k0(pr(i)) + " g proteína";
+  const parts = [];
+  if(ut) parts.push(ut);
+  if(i.p != null) parts.push(k0(pr(i)) + " g proteína");
+  return parts.join(" · ") || "sin dato de proteína";
 }
+function amtOf(i){ return i.po && i.u ? Math.round(i.g / i.u.g * 10) / 10 : Math.round(i.g); }
 function stepOf(i){ return (i.whole && i.u) ? i.u.g : (i.k > 500 ? 5 : 10); }
 
 function chipHTML(f, present){
@@ -518,6 +538,8 @@ function renderPlan(){
   const rg = $("rgrid");
   if(!rg.childElementCount){
     rg.innerHTML = GORDER.map(g => '<label><span><i style="background:var(--g-' + g + ')"></i>1 ' + GROUPS[g].one + '</span><input id="r-' + g + '" data-r="' + g + '" inputmode="numeric" value="' + S.R[g] + '"></label>').join("");
+  }
+  if(!$("cfG").childElementCount){
     $("cfG").innerHTML = GORDER.map(g => '<option value="' + g + '">' + GROUPS[g].name + '</option>').join("");
   }
 }
@@ -605,7 +627,13 @@ function newId(){ return Date.now().toString(36) + (seq++).toString(36); }
 function addFood(f){
   const its = items();
   const existing = its.find(i => i.meal === curMeal && i.food === f.id);
-  const base = {meal:curMeal, food:f.id, name:f.name, grp:f.grp, k:f.k, p:f.p || 0, u:f.u || null, whole:!!f.whole};
+  const base = {meal:curMeal, food:f.id, name:f.name, grp:f.grp, k:f.k, p:(f.p == null ? null : f.p), u:f.u || null, whole:!!f.whole, po:!!f.po};
+  // Personalizado con calorías de la porción: se suma tal cual, siempre fijo
+  if(f.po){
+    if(existing){ existing.g = (existing.g || 0) + f.u.g; existing.pin = true; }
+    else its.push(Object.assign({id:newId(), g:f.u.g, pin:true}, base));
+    balance(curMeal); changed(); return;
+  }
   if(S.mode === "add"){
     const portion = f.u ? f.u.g : 100;
     if(existing){ existing.g = (existing.g || 0) + portion; existing.pin = true; }
@@ -630,7 +658,7 @@ document.addEventListener("click", e => {
     persistSettings(); render(); return;
   }
   if(act !== "clear" && clearArmed){ clearArmed = false; clearTimeout(clearTimer); }
-  if(act === "meal"){ curMeal = el.dataset.meal; render(); return; }
+  if(act === "meal"){ curMeal = el.dataset.meal; render(); renderCustomForm(); return; }
   if(act === "food"){ const f = foodById(el.dataset.food); if(f) addFood(f); return; }
   if(act === "mode"){ S.mode = el.dataset.mode; persistSettings(); renderShelf(); return; }
   if(act === "day-prev"){ goDate(shiftDate(curDate, -1)); return; }
@@ -656,6 +684,9 @@ document.addEventListener("click", e => {
     days[curDate] = items().filter(i => i.meal !== curMeal);
     changed(); return;
   }
+  if(act === "custom-open"){ openCustom(true); return; }
+  if(act === "custom-close"){ openCustom(false); return; }
+  if(act === "basis"){ cfBasis = el.dataset.basis; renderCustomForm(); return; }
   if(act === "op"){ S.op[el.dataset.meal] = Number(el.dataset.v) === 2 ? 2 : 1; persistSettings(); render(); return; }
   if(act === "alm"){ S.alm[el.dataset.meal] = !S.alm[el.dataset.meal]; persistSettings(); render(); return; }
 });
@@ -666,13 +697,13 @@ document.addEventListener("input", e => {
   if(el.matches(".stepper input")){
     const i = findItem(el.dataset.item); if(!i) return;
     const v = parseFloat(String(el.value).replace(",", "."));
-    i.g = isFinite(v) && v >= 0 ? v : 0;
+    i.g = isFinite(v) && v >= 0 ? (i.po && i.u ? v * i.u.g : v) : 0;
     i.pin = true;
     balance(curMeal);
     persistDay(curDate);
     // actualizar sin reconstruir el input en foco
     for(const it of mealItems(curMeal)){
-      const inp = $("g-" + it.id); if(inp && inp !== el) inp.value = Math.round(it.g);
+      const inp = $("g-" + it.id); if(inp && inp !== el) inp.value = amtOf(it);
       const k = $("kc-" + it.id); if(k) k.innerHTML = k0(kc(it)) + " <small>kcal</small>";
       const s = $("sub-" + it.id); if(s) s.textContent = subText(it);
       const p = document.querySelector('.pin[data-item="' + it.id + '"]');
@@ -694,23 +725,46 @@ document.addEventListener("change", e => {
 });
 document.addEventListener("focusin", e => { if(e.target.matches(".stepper input")) { try{ e.target.select(); }catch(_){} } });
 
+let cfBasis = "total";
+function renderCustomForm(){
+  const meal = MEALS.find(x => x.id === curMeal);
+  $("cfBasisTotal").setAttribute("aria-pressed", cfBasis === "total");
+  $("cfBasis100").setAttribute("aria-pressed", cfBasis === "100");
+  $("cfGWrap").hidden = cfBasis !== "100";
+  $("cfBasisHint").textContent = cfBasis === "total"
+    ? "Ponés las calorías del plato que vas a comer y se suman tal cual."
+    : "Ponés las calorías cada 100 g (de la etiqueta o una tabla) y la app te calcula los gramos.";
+  $("cfSubmit").textContent = "Agregar a " + meal.name.toLowerCase();
+}
+function openCustom(open){
+  $("customForm").hidden = !open;
+  $("customOpen").hidden = open;
+  if(open){ renderCustomForm(); $("cfMsg").textContent = ""; try{ $("cfName").focus(); }catch(_){} }
+}
+function num(v){ const x = parseFloat(String(v || "").trim().replace(",", ".")); return isFinite(x) ? x : NaN; }
 $("customForm").addEventListener("submit", e => {
   e.preventDefault();
   const name = $("cfName").value.trim();
-  const k = parseFloat($("cfK").value.replace(",", "."));
-  const p = parseFloat(($("cfP").value || "0").replace(",", "."));
-  const ug = parseFloat(($("cfU").value || "").replace(",", "."));
-  const grp = $("cfG").value;
+  const k = num($("cfK").value);
+  const pRaw = $("cfP").value.trim();
+  const p = pRaw === "" ? null : num(pRaw);
   const msg = $("cfMsg");
   if(!name){ msg.textContent = "Poné un nombre."; return; }
-  if(!(k > 0 && k < 1000)){ msg.textContent = "Las kcal cada 100 g tienen que ser un número entre 1 y 999."; return; }
-  const f = {id:"c-" + newId(), name:name, grp:GROUPS[grp] ? grp : "proteina", k:k, p:(p >= 0 && p < 100) ? p : 0, custom:true};
-  if(ug > 0) f.u = {n:"porción", pl:"porciones", g:ug};
-  S.custom.push(f);
-  persistSettings();
+  const maxK = cfBasis === "total" ? 5000 : 1000;
+  if(!(k > 0 && k < maxK)){ msg.textContent = cfBasis === "total" ? "Poné las calorías: un número entre 1 y 4999." : "Las kcal cada 100 g tienen que ser un número entre 1 y 999."; return; }
+  if(p !== null && !(p >= 0 && p < (cfBasis === "total" ? 500 : 100))){ msg.textContent = "Las proteínas tienen que ser un número (o dejalas vacías)."; return; }
+  let f;
+  if(cfBasis === "total"){
+    f = {id:"c-" + newId(), name:name, grp:"proteina", k:k, p:p, u:{n:"porción", pl:"porciones", g:100}, whole:true, po:true, custom:true};
+  } else {
+    const grp = $("cfG").value;
+    f = {id:"c-" + newId(), name:name, grp:GROUPS[grp] ? grp : "proteina", k:k, p:p, custom:true};
+  }
+  if($("cfSave").checked){ S.custom.push(f); persistSettings(); }
   msg.textContent = "";
-  e.target.reset();
-  render();
+  $("cfName").value = ""; $("cfK").value = ""; $("cfP").value = "";
+  openCustom(false);
+  addFood(f);
 });
 
 // Si la app quedó abierta de un día para el otro, pasar solo al día nuevo
